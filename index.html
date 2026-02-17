@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>WebPage</title>
+    <script type="text/javascript" src="https://payhip.com/payhip.js"></script>
     <style>
       :root {
         --bg1: #0b1f3a;
@@ -66,16 +67,29 @@
         color: var(--text);
         border: 1px solid rgba(255,255,255,0.2);
       }
+      .note {
+        margin-top: 14px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      code { color: #ffd18a; }
     </style>
   </head>
   <body>
     <main class="card">
       <h1>WebPage</h1>
-      <p>Your GitHub Pages site is live. Replace this content with your own. Add links, images, and sections to make it yours.</p>
+      <p>This is a test Payhip button. Replace the product key with your real Payhip product key.</p>
       <div class="actions">
-        <a class="btn" href="https://github.com">View GitHub</a>
-        <a class="btn ghost" href="#" onclick="alert('Edit index.html to customize this site!'); return false;">How to edit</a>
+        <a href="https://payhip.com/b/R5dYZ"
+           class="payhip-buy-button btn"
+           data-theme="none"
+           data-product="R5dYZ">
+          Buy Test Product
+        </a>
+        <a class="btn ghost" href="#" onclick="alert('Replace R5dYZ with your Payhip product key in index.html'); return false;">How to edit</a>
       </div>
+      <div class="note">Edit <code>R5dYZ</code> in this file to your real Payhip key.</div>
     </main>
   </body>
 </html>
+

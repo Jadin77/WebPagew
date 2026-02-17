@@ -9,8 +9,13 @@
         --bg1: #0b1f3a;
         --bg2: #0f3b5f;
         --accent: #ff7a00;
+        --accent-2: #21d4fd;
+        --accent-3: #7cff6b;
+        --accent-4: #ff5ea8;
         --text: #f5f7fb;
         --muted: #c7d2e0;
+        --card: rgba(8, 18, 32, 0.7);
+        --border: rgba(255, 255, 255, 0.08);
       }
       * { box-sizing: border-box; }
       body {
@@ -21,68 +26,274 @@
         background: radial-gradient(1200px 600px at 20% 10%, #163a63 0%, transparent 60%),
                     radial-gradient(900px 500px at 80% 20%, #1d4b7a 0%, transparent 55%),
                     linear-gradient(160deg, var(--bg1), var(--bg2));
-        display: grid;
-        place-items: center;
       }
-      .card {
-        width: min(900px, 92vw);
-        padding: 48px 40px;
-        background: rgba(8, 18, 32, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        backdrop-filter: blur(8px);
+        background: rgba(6, 14, 26, 0.7);
+        border-bottom: 1px solid var(--border);
       }
-      h1 {
-        margin: 0 0 12px;
-        font-size: clamp(28px, 4vw, 44px);
-        letter-spacing: 0.5px;
-      }
-      p {
-        margin: 0 0 24px;
-        color: var(--muted);
-        font-size: clamp(16px, 2vw, 18px);
-        line-height: 1.6;
-      }
-      .actions {
+      .nav {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 14px 20px;
         display: flex;
-        gap: 12px;
+        align-items: center;
+        gap: 10px;
         flex-wrap: wrap;
       }
-      a.btn {
+      .brand {
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin-right: 6px;
+      }
+      .nav a {
+        color: var(--text);
+        text-decoration: none;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .nav a:hover {
+        border-color: var(--border);
+        background: rgba(255,255,255,0.04);
+      }
+      .tab-home { background: rgba(33,212,253,0.18); }
+      .tab-scripts { background: rgba(255,122,0,0.20); }
+      .tab-studio { background: rgba(124,255,107,0.20); }
+      .tab-programs { background: rgba(255,94,168,0.18); }
+      .tab-socials { background: rgba(255,255,255,0.10); }
+      .nav .spacer { flex: 1; }
+      .btn {
         text-decoration: none;
         color: #111;
         background: var(--accent);
-        padding: 12px 18px;
+        padding: 10px 14px;
         border-radius: 10px;
         font-weight: 600;
         transition: transform 0.15s ease, box-shadow 0.15s ease;
       }
-      a.btn:hover {
+      .btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 10px 20px rgba(255, 122, 0, 0.25);
       }
-      a.ghost {
+      .btn.ghost {
         background: transparent;
         color: var(--text);
         border: 1px solid rgba(255,255,255,0.2);
       }
-      .note {
-        margin-top: 14px;
-        font-size: 14px;
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+      }
+      .hero {
+        padding: 48px 32px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      }
+      .hero h1 {
+        margin: 0 0 12px;
+        font-size: clamp(30px, 4vw, 48px);
+      }
+      .hero p {
+        margin: 0 0 22px;
+        color: var(--muted);
+        font-size: clamp(16px, 2vw, 18px);
+        line-height: 1.6;
+      }
+      .hero .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .section {
+        margin-top: 36px;
+      }
+      .section h2 {
+        margin: 0 0 10px;
+        font-size: clamp(22px, 3vw, 30px);
+      }
+      .section p {
+        margin: 0 0 18px;
         color: var(--muted);
       }
-      code { color: #ffd18a; }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        padding: 20px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+      }
+      .thumb {
+        width: 100%;
+        height: 150px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(33,212,253,0.35), rgba(255,122,0,0.25));
+        border: 1px dashed rgba(255,255,255,0.2);
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .card h3 {
+        margin: 14px 0 8px;
+        font-size: 18px;
+      }
+      .card p {
+        margin: 0 0 14px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      footer {
+        margin-top: 60px;
+        color: var(--muted);
+        font-size: 13px;
+        text-align: center;
+      }
     </style>
   </head>
   <body>
-    <main class="card">
-      <h1>WebPage</h1>
-      <p>Visit my shop or buy the featured product.</p>
-      <div class="actions">
-        <a href="https://shoppy.gg/product/CDMeiuO" class="btn">Buy Featured Product</a>
-        <a href="https://shoppy.gg/@jadin77" class="btn ghost">Visit My Shop</a>
-      </div>
-      <div class="note">You can add more products by linking directly to each Shoppy product page.</div>
+    <header>
+      <nav class="nav">
+        <div class="brand">Jadin77</div>
+        <a class="tab-home" href="#home">🏠 Home</a>
+        <a class="tab-scripts" href="#roblox-scripts">🧩 Roblox Scripts</a>
+        <a class="tab-studio" href="#roblox-studio">🛠️ Roblox Studio</a>
+        <a class="tab-programs" href="#programs">💻 Programs</a>
+        <a class="tab-socials" href="#socials">🌐 Socials</a>
+        <div class="spacer"></div>
+        <a class="btn" href="https://shoppy.gg/@jadin77">View Shop</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section id="home" class="hero">
+        <h1>Main Page</h1>
+        <p>This is the main landing page. Add quick info about your shop, what you sell, and why people should trust you. We can expand this later with reviews, FAQs, and featured items.</p>
+        <div class="actions">
+          <a class="btn" href="https://shoppy.gg/@jadin77">Shop Now</a>
+          <a class="btn ghost" href="#roblox-scripts">Browse Scripts</a>
+        </div>
+      </section>
+
+      <section id="roblox-scripts" class="section">
+        <h2>Roblox Scripts</h2>
+        <p>Sections for script products. Add images, short descriptions, and a buy button for each.</p>
+        <div class="grid">
+          <div class="card">
+            <div class="thumb">Image: images/script-1.jpg</div>
+            <h3>Script Product 1</h3>
+            <p>Short description of the script and what it does. Replace with real details.</p>
+            <a class="btn" href="#">Buy (link later)</a>
+          </div>
+          <div class="card">
+            <div class="thumb">Image: images/script-2.jpg</div>
+            <h3>Script Product 2</h3>
+            <p>Short description of the script and what it does. Replace with real details.</p>
+            <a class="btn" href="#">Buy (link later)</a>
+          </div>
+          <div class="card">
+            <div class="thumb">Image: images/script-3.jpg</div>
+            <h3>Script Product 3</h3>
+            <p>Short description of the script and what it does. Replace with real details.</p>
+            <a class="btn" href="#">Buy (link later)</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="roblox-studio" class="section">
+        <h2>Roblox Studio</h2>
+        <p>Use this for Studio assets, plugins, or services. Add images and buy links later.</p>
+        <div class="grid">
+          <div class="card">
+            <div class="thumb">Image: images/studio-1.jpg</div>
+            <h3>Studio Product 1</h3>
+            <p>Short description of the studio product or service.</p>
+            <a class="btn" href="#">Buy (link later)</a>
+          </div>
+          <div class="card">
+            <div class="thumb">Image: images/studio-2.jpg</div>
+            <h3>Studio Product 2</h3>
+            <p>Short description of the studio product or service.</p>
+            <a class="btn" href="#">Buy (link later)</a>
+          </div>
+          <div class="card">
+            <div class="thumb">Image: images/studio-3.jpg</div>
+            <h3>Studio Product 3</h3>
+            <p>Short description of the studio product or service.</p>
+            <a class="btn" href="#">Buy (link later)</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="programs" class="section">
+        <h2>Programs</h2>
+        <p>Use this for downloadable programs or tools. Add images and buy links later.</p>
+        <div class="grid">
+          <div class="card">
+            <div class="thumb">Image: images/program-1.jpg</div>
+            <h3>Program 1</h3>
+            <p>Short description of the program and its features.</p>
+            <a class="btn" href="#">Buy (link later)</a>
+          </div>
+          <div class="card">
+            <div class="thumb">Image: images/program-2.jpg</div>
+            <h3>Program 2</h3>
+            <p>Short description of the program and its features.</p>
+            <a class="btn" href="#">Buy (link later)</a>
+          </div>
+          <div class="card">
+            <div class="thumb">Image: images/program-3.jpg</div>
+            <h3>Program 3</h3>
+            <p>Short description of the program and its features.</p>
+            <a class="btn" href="#">Buy (link later)</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="socials" class="section">
+        <h2>Socials</h2>
+        <p>Direct links for people to connect with you.</p>
+        <div class="grid">
+          <div class="card">
+            <div class="thumb">Image: images/social-1.jpg</div>
+            <h3>Discord</h3>
+            <p>Invite link to your Discord server.</p>
+            <a class="btn ghost" href="#">Open Discord</a>
+          </div>
+          <div class="card">
+            <div class="thumb">Image: images/social-2.jpg</div>
+            <h3>YouTube</h3>
+            <p>Link to your YouTube channel or videos.</p>
+            <a class="btn ghost" href="#">Open YouTube</a>
+          </div>
+          <div class="card">
+            <div class="thumb">Image: images/social-3.jpg</div>
+            <h3>TikTok</h3>
+            <p>Link to your TikTok profile.</p>
+            <a class="btn ghost" href="#">Open TikTok</a>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        © 2026 Jadin77. All rights reserved.
+      </footer>
     </main>
   </body>
 </html>

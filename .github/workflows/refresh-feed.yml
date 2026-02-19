@@ -8,7 +8,7 @@ on:
       max_pages:
         description: "Max pages for this run"
         required: false
-        default: "40"
+        default: "60"
       delay_ms:
         description: "Delay between page pulls (ms)"
         required: false
@@ -16,7 +16,7 @@ on:
       target_pages:
         description: "Target visible pages to maintain"
         required: false
-        default: "100"
+        default: "140"
 
 permissions:
   contents: write
@@ -44,13 +44,13 @@ jobs:
         shell: pwsh
         run: |
           $maxPages = "${{ github.event.inputs.max_pages }}"
-          if (-not $maxPages) { $maxPages = "40" }
+          if (-not $maxPages) { $maxPages = "60" }
           if ([int]$maxPages -lt 40) { $maxPages = "40" }
           $delayMs = "${{ github.event.inputs.delay_ms }}"
           if (-not $delayMs) { $delayMs = "1400" }
           $targetPages = "${{ github.event.inputs.target_pages }}"
-          if (-not $targetPages) { $targetPages = "100" }
-          if ([int]$targetPages -lt 1) { $targetPages = "100" }
+          if (-not $targetPages) { $targetPages = "140" }
+          if ([int]$targetPages -lt 1) { $targetPages = "140" }
           $targetScripts = [int]$targetPages * 24
 
           $rollingCount = 0
@@ -86,7 +86,7 @@ jobs:
             -BlacklistOwnerPages 2 `
             -BlacklistOwnerDelayMs 900 `
             -MinimumKeepRatio 35 `
-            -RetentionDays 14 `
+            -RetentionDays 21 `
             -MaxVisibleScripts $targetScripts
 
           if ($LASTEXITCODE -ne 0) {

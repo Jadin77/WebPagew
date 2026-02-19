@@ -7,8 +7,8 @@ param(
   [int]$BlacklistOwnerPages = 3,
   [int]$BlacklistOwnerDelayMs = 900,
   [int]$MinimumKeepRatio = 35,
-  [int]$RetentionDays = 14,
-  [int]$MaxVisibleScripts = 2400,
+  [int]$RetentionDays = 21,
+  [int]$MaxVisibleScripts = 3360,
   [switch]$FailOnEmpty,
   [switch]$Force
 )
@@ -208,7 +208,8 @@ $autoLogPath = Join-Path $moderationDir "auto-blacklist-log.jsonl"
 
 Ensure-File -Path $settingsPath -DefaultContent @"
 {
-  "max_posts_per_window": 5,
+  "max_posts_per_window": 3,
+  "max_user_posts_per_window": 3,
   "window_minutes": 10
 }
 "@
@@ -238,16 +239,18 @@ IHeartCoding
 Ensure-File -Path $autoBlacklistTitlesPath -DefaultContent "# Auto-generated normalized titles`r`n"
 Ensure-File -Path $autoLogPath
 
-$settingsDefault = @{ max_posts_per_window = 5; window_minutes = 10 }
+$settingsDefault = @{ max_posts_per_window = 3; max_user_posts_per_window = 3; window_minutes = 10 }
 $settings = $settingsDefault
 try {
   $parsed = Get-Content $settingsPath -Raw | ConvertFrom-Json
   if ($parsed.max_posts_per_window) { $settings.max_posts_per_window = [int]$parsed.max_posts_per_window }
+  if ($parsed.max_user_posts_per_window) { $settings.max_user_posts_per_window = [int]$parsed.max_user_posts_per_window }
   if ($parsed.window_minutes) { $settings.window_minutes = [int]$parsed.window_minutes }
 } catch {
   Write-Warning "Invalid moderation/settings.json; using defaults."
 }
 $maxPostsPerWindow = [Math]::Max(1, [int]$settings.max_posts_per_window)
+$maxUserPostsPerWindow = [Math]::Max(1, [int]$settings.max_user_posts_per_window)
 $windowMinutes = [Math]::Max(1, [int]$settings.window_minutes)
 
 $blacklistRules = Build-KeywordRules -Lines (Read-Lines -Path $blacklistKeywordsPath)
@@ -568,6 +571,38 @@ if ($newAutoTitleKeys.Count -gt 0) {
   }
 }
 
+# Anti-spam by owner burst in configured time window.
+$burstBlockedOwners = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+$ownerGroups = $rawScripts | Where-Object { $_.ownerUsername } | Group-Object ownerUsername
+foreach ($group in $ownerGroups) {
+  $owner = [string]$group.Name
+  if (-not $owner) { continue }
+  if ($trustedUsers.Contains($owner)) { continue }
+
+  $times = @(
+    $group.Group |
+      ForEach-Object { try { [datetime]$_.createdAt } catch { $null } } |
+      Where-Object { $_ -ne $null } |
+      Sort-Object
+  )
+  if ($times.Count -le $maxUserPostsPerWindow) { continue }
+
+  $isBurst = $false
+  for ($i = 0; $i -lt $times.Count; $i++) {
+    $start = $times[$i]
+    $countInWindow = 1
+    for ($j = $i + 1; $j -lt $times.Count; $j++) {
+      $diff = ($times[$j] - $start).TotalMinutes
+      if ($diff -le $windowMinutes) { $countInWindow++ } else { break }
+    }
+    if ($countInWindow -gt $maxUserPostsPerWindow) { $isBurst = $true; break }
+  }
+
+  if ($isBurst) {
+    [void]$burstBlockedOwners.Add($owner)
+  }
+}
+
 $autoSorted = @($autoTitleKeys | Sort-Object)
 if ($autoSorted.Count -gt 0) {
   $autoSorted | Set-Content -Path $autoBlacklistTitlesPath -Encoding utf8
@@ -576,6 +611,7 @@ if ($autoSorted.Count -gt 0) {
 $visibleScripts = @()
 $filteredKeywordCount = 0
 $filteredSpamCount = 0
+$filteredOwnerBurstCount = 0
 $filteredUserCount = 0
 foreach ($s in $rawScripts) {
   $blockedByOwnerSlug = $s.slug -and $blockedSlugsByOwner.Contains([string]$s.slug)
@@ -589,7 +625,8 @@ foreach ($s in $rawScripts) {
   }
 
   $autoBlocked = $s.titleKey -and $autoTitleKeys.Contains($s.titleKey)
-  $s.blocked_spam = [bool]$autoBlocked
+  $ownerBurstBlocked = $s.ownerUsername -and $burstBlockedOwners.Contains([string]$s.ownerUsername)
+  $s.blocked_spam = [bool]($autoBlocked -or $ownerBurstBlocked)
 
   if ($s.blocked_user -and -not $s.trustedByUser) {
     $filteredUserCount++
@@ -598,6 +635,11 @@ foreach ($s in $rawScripts) {
   # Trusted scripts/users bypass manual keyword blacklist.
   if ($s.blocked_manual_keyword -and -not $s.trusted) {
     $filteredKeywordCount++
+    continue
+  }
+  if ($ownerBurstBlocked -and -not $s.trusted) {
+    $filteredOwnerBurstCount++
+    $filteredSpamCount++
     continue
   }
   if ($s.blocked_spam -and -not $s.trusted) {
@@ -618,13 +660,16 @@ $out = [PSCustomObject]@{
   count = $visibleScripts.Count
   moderation = [PSCustomObject]@{
     max_posts_per_window = $maxPostsPerWindow
+    max_user_posts_per_window = $maxUserPostsPerWindow
     window_minutes = $windowMinutes
     filteredByKeywordCount = $filteredKeywordCount
     filteredByUserCount = $filteredUserCount
     filteredBySpamCount = $filteredSpamCount
+    filteredByOwnerBurstCount = $filteredOwnerBurstCount
     filteredCount = ($filteredKeywordCount + $filteredUserCount + $filteredSpamCount)
     autoBlacklistedTitleCount = $autoTitleKeys.Count
     newlyAutoBlacklistedTitleCount = $newAutoTitleKeys.Count
+    burstBlockedOwnerCount = $burstBlockedOwners.Count
     trustedKeywordRuleCount = $trustedRules.Count
     blacklistKeywordRuleCount = $blacklistRules.Count
     trustedUserCount = $trustedUsers.Count

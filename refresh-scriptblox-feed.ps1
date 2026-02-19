@@ -7,8 +7,8 @@ param(
   [int]$BlacklistOwnerPages = 3,
   [int]$BlacklistOwnerDelayMs = 900,
   [int]$MinimumKeepRatio = 35,
-  [int]$RetentionDays = 30,
-  [int]$MaxVisibleScripts = 3360,
+  [int]$RetentionDays = 60,
+  [int]$MaxVisibleScripts = 5760,
   [switch]$FailOnEmpty,
   [switch]$Force
 )
@@ -141,6 +141,27 @@ function Invoke-JsonWithRetry {
   throw "Request failed for $Uri"
 }
 
+function Test-ScriptDetailAvailability {
+  param([string]$Slug)
+  if (-not $Slug) { return $null }
+  $uri = "https://scriptblox.com/api/script/" + [uri]::EscapeDataString($Slug)
+  try {
+    $payload = Invoke-RestMethod -Method Get -Uri $uri -ErrorAction Stop
+    if ($payload.result -and $payload.result.script) { return $true }
+    if ($payload.script) { return $true }
+    return $null
+  } catch {
+    $statusCode = $null
+    try {
+      if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
+        $statusCode = [int]$_.Exception.Response.StatusCode
+      }
+    } catch {}
+    if ($statusCode -eq 404) { return $false }
+    return $null
+  }
+}
+
 function Get-BlockedSlugsByOwners {
   param(
     [object]$Users,
@@ -211,6 +232,7 @@ Ensure-File -Path $settingsPath -DefaultContent @"
   "max_posts_per_window": 3,
   "max_user_posts_per_window": 3,
   "max_new_posts_per_author_per_run": 5,
+  "max_stale_validations_per_run": 20,
   "unresolved_new_post_quarantine_minutes": 240,
   "window_minutes": 10
 }
@@ -219,6 +241,8 @@ Ensure-File -Path $blacklistKeywordsPath -DefaultContent @"
 # One keyword phrase per line.
 # Any variation containing all words is blocked.
 mm2 dupe
+autodrive
+auto drive
 "@
 Ensure-File -Path $trustedKeywordsPath -DefaultContent @"
 # One trusted keyword phrase per line.
@@ -241,13 +265,14 @@ IHeartCoding
 Ensure-File -Path $autoBlacklistTitlesPath -DefaultContent "# Auto-generated normalized titles`r`n"
 Ensure-File -Path $autoLogPath
 
-$settingsDefault = @{ max_posts_per_window = 3; max_user_posts_per_window = 3; max_new_posts_per_author_per_run = 5; unresolved_new_post_quarantine_minutes = 240; window_minutes = 10 }
+$settingsDefault = @{ max_posts_per_window = 3; max_user_posts_per_window = 3; max_new_posts_per_author_per_run = 5; max_stale_validations_per_run = 20; unresolved_new_post_quarantine_minutes = 240; window_minutes = 10 }
 $settings = $settingsDefault
 try {
   $parsed = Get-Content $settingsPath -Raw | ConvertFrom-Json
   if ($parsed.max_posts_per_window) { $settings.max_posts_per_window = [int]$parsed.max_posts_per_window }
   if ($parsed.max_user_posts_per_window) { $settings.max_user_posts_per_window = [int]$parsed.max_user_posts_per_window }
   if ($parsed.max_new_posts_per_author_per_run) { $settings.max_new_posts_per_author_per_run = [int]$parsed.max_new_posts_per_author_per_run }
+  if ($parsed.max_stale_validations_per_run -or $parsed.max_stale_validations_per_run -eq 0) { $settings.max_stale_validations_per_run = [int]$parsed.max_stale_validations_per_run }
   if ($parsed.unresolved_new_post_quarantine_minutes) { $settings.unresolved_new_post_quarantine_minutes = [int]$parsed.unresolved_new_post_quarantine_minutes }
   if ($parsed.window_minutes) { $settings.window_minutes = [int]$parsed.window_minutes }
 } catch {
@@ -256,6 +281,7 @@ try {
 $maxPostsPerWindow = [Math]::Max(1, [int]$settings.max_posts_per_window)
 $maxUserPostsPerWindow = [Math]::Max(1, [int]$settings.max_user_posts_per_window)
 $maxNewPostsPerAuthorPerRun = [Math]::Max(1, [int]$settings.max_new_posts_per_author_per_run)
+$maxStaleValidationsPerRun = [Math]::Max(0, [int]$settings.max_stale_validations_per_run)
 $unresolvedQuarantineMinutes = [Math]::Max(0, [int]$settings.unresolved_new_post_quarantine_minutes)
 $windowMinutes = [Math]::Max(1, [int]$settings.window_minutes)
 
@@ -469,6 +495,33 @@ if ($rawScripts.Count -eq 0) {
   if ($FailOnEmpty) { exit 1 }
   exit 0
 }
+
+# Remove stale cached entries that now hard-fail on detail endpoint (taken down/invalid).
+$staleValidatedCount = 0
+$staleInvalidRemovedCount = 0
+if ($maxStaleValidationsPerRun -gt 0) {
+  $invalidSlugs = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+  $staleCandidates = @(
+    $rawScripts |
+      Where-Object { -not $_.isNewThisRun -and $_.slug } |
+      Sort-Object @{Expression = { $_.createdAt }; Descending = $true } |
+      Select-Object -First $maxStaleValidationsPerRun
+  )
+  foreach ($candidate in $staleCandidates) {
+    $availability = Test-ScriptDetailAvailability -Slug ([string]$candidate.slug)
+    $staleValidatedCount++
+    if ($availability -eq $false) {
+      [void]$invalidSlugs.Add([string]$candidate.slug)
+    }
+    if ($DetailDelayMs -gt 0) { Start-Sleep -Milliseconds $DetailDelayMs }
+  }
+  if ($invalidSlugs.Count -gt 0) {
+    $before = $rawScripts.Count
+    $rawScripts = @($rawScripts | Where-Object { -not $invalidSlugs.Contains([string]$_.slug) })
+    $staleInvalidRemovedCount = [Math]::Max(0, $before - $rawScripts.Count)
+  }
+}
+
 foreach ($s in $rawScripts) {
   $s | Add-Member -NotePropertyName trending -NotePropertyValue ($trendingSlugs.Contains([string]$s.slug) ) -Force
   $slug = [string]$s.slug
@@ -609,6 +662,7 @@ $out = [PSCustomObject]@{
     max_posts_per_window = $maxPostsPerWindow
     max_user_posts_per_window = $maxUserPostsPerWindow
     max_new_posts_per_author_per_run = $maxNewPostsPerAuthorPerRun
+    max_stale_validations_per_run = $maxStaleValidationsPerRun
     unresolved_new_post_quarantine_minutes = $unresolvedQuarantineMinutes
     window_minutes = $windowMinutes
     filteredByKeywordCount = $filteredKeywordCount
@@ -617,6 +671,7 @@ $out = [PSCustomObject]@{
     filteredByOwnerBurstCount = $filteredOwnerBurstCount
     filteredByRunAuthorBurstCount = $filteredRunAuthorBurstCount
     filteredByUnresolvedNewCount = $filteredUnresolvedNewCount
+    removedByInvalidDetail404Count = $staleInvalidRemovedCount
     filteredCount = ($filteredKeywordCount + $filteredUserCount + $filteredSpamCount)
     autoBlacklistedTitleCount = $autoTitleKeys.Count
     newlyAutoBlacklistedTitleCount = 0
@@ -630,6 +685,7 @@ $out = [PSCustomObject]@{
     ownerResolvedCount = ($rawScripts | Where-Object { $_.ownerUsername } | Measure-Object).Count
     detailLookupsTried = $detailLookupsTried
     detailLookupsSucceeded = $detailLookupsSucceeded
+    staleDetailValidationsTried = $staleValidatedCount
   }
   scripts = $visibleScripts
 }
@@ -668,6 +724,7 @@ Write-Host " - $jsPath"
 Write-Host ("Filtered by keyword: {0}" -f $filteredKeywordCount)
 Write-Host ("Filtered by user: {0}" -f $filteredUserCount)
 Write-Host ("Filtered by spam: {0}" -f $filteredSpamCount)
+Write-Host ("Removed invalid/taken-down cached scripts (404): {0}" -f $staleInvalidRemovedCount)
 Write-Host ("New auto-blacklisted titles this run: {0}" -f $newAutoTitleKeys.Count)
 Write-Host ("Owner lookups tried/succeeded: {0}/{1}" -f $detailLookupsTried, $detailLookupsSucceeded)
 
@@ -676,7 +733,26 @@ $stateOut = [PSCustomObject]@{
   maxPagesUsed = $MaxPages
   delayMsUsed = $DelayMs
   minIntervalMinutes = $MinIntervalMinutes
+  retentionDays = $RetentionDays
+  maxVisibleScripts = $MaxVisibleScripts
+  totalPagesAtSource = $totalPages
+  maxDetailLookupsPerRun = $MaxDetailLookupsPerRun
+  detailDelayMs = $DetailDelayMs
+  detailLookupsTried = $detailLookupsTried
+  detailLookupsSucceeded = $detailLookupsSucceeded
+  maxStaleValidationsPerRun = $maxStaleValidationsPerRun
+  staleDetailValidationsTried = $staleValidatedCount
+  removedInvalidDetail404Count = $staleInvalidRemovedCount
+  maxNewPostsPerAuthorPerRun = $maxNewPostsPerAuthorPerRun
+  unresolvedNewPostQuarantineMinutes = $unresolvedQuarantineMinutes
+  burstBlockedOwnerCount = $runBlockedOwners.Count
   count = $visibleScripts.Count
+  filteredByKeywordCount = $filteredKeywordCount
+  filteredByUserCount = $filteredUserCount
+  filteredBySpamCount = $filteredSpamCount
+  filteredByOwnerBurstCount = $filteredOwnerBurstCount
+  filteredByRunAuthorBurstCount = $filteredRunAuthorBurstCount
+  filteredByUnresolvedNewCount = $filteredUnresolvedNewCount
   filteredCount = ($filteredKeywordCount + $filteredUserCount + $filteredSpamCount)
 }
 $stateOut | ConvertTo-Json -Depth 4 | Set-Content -Path $statePath -Encoding utf8

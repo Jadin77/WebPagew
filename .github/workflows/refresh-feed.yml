@@ -16,7 +16,7 @@ on:
       target_pages:
         description: "Target visible pages to maintain"
         required: false
-        default: "140"
+        default: "240"
 
 permissions:
   contents: write
@@ -49,8 +49,8 @@ jobs:
           $delayMs = "${{ github.event.inputs.delay_ms }}"
           if (-not $delayMs) { $delayMs = "1400" }
           $targetPages = "${{ github.event.inputs.target_pages }}"
-          if (-not $targetPages) { $targetPages = "140" }
-          if ([int]$targetPages -lt 1) { $targetPages = "140" }
+          if (-not $targetPages) { $targetPages = "240" }
+          if ([int]$targetPages -lt 1) { $targetPages = "240" }
           $targetScripts = [int]$targetPages * 24
 
           $rollingCount = 0
@@ -64,9 +64,7 @@ jobs:
             }
           }
           if ($rollingCount -lt $targetScripts) {
-            if ([int]$maxPages -lt 140) { $maxPages = "140" }
-            if ([int]$delayMs -lt 1700) { $delayMs = "1700" }
-            Write-Host ("Bootstrap mode active: rolling cache {0}/{1}. Using MaxPages={2}, DelayMs={3}" -f $rollingCount, $targetScripts, $maxPages, $delayMs)
+            Write-Host ("Bootstrap mode active: rolling cache {0}/{1}. Keeping MaxPages={2}, DelayMs={3}" -f $rollingCount, $targetScripts, $maxPages, $delayMs)
           } else {
             Write-Host ("Maintenance mode: rolling cache {0}/{1}" -f $rollingCount, $targetScripts)
           }
@@ -86,7 +84,7 @@ jobs:
             -BlacklistOwnerPages 2 `
             -BlacklistOwnerDelayMs 900 `
             -MinimumKeepRatio 35 `
-            -RetentionDays 30 `
+            -RetentionDays 60 `
             -MaxVisibleScripts $targetScripts
 
           if ($LASTEXITCODE -ne 0) {

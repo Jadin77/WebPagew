@@ -1,8 +1,8 @@
-﻿{
-    "lastRunUtc":  "2026-02-19T03:30:20.5834851Z",
-    "maxPagesUsed":  120,
-    "delayMsUsed":  1700,
-    "minIntervalMinutes":  0,
-    "count":  2353,
-    "filteredCount":  48
+{
+  "lastRunUtc": "2026-02-19T18:13:21.3600834Z",
+  "maxPagesUsed": 40,
+  "delayMsUsed": 1400,
+  "minIntervalMinutes": 0,
+  "count": 2400,
+  "filteredCount": 68
 }

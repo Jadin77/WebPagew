@@ -34,7 +34,12 @@ jobs:
           $delayMs = "${{ github.event.inputs.delay_ms }}"
           if (-not $delayMs) { $delayMs = "1400" }
 
-          ./refresh-scriptblox-feed.ps1 `
+          if (-not (Test-Path "./refresh-scriptblox-feed.ps1")) {
+            Write-Warning "refresh-scriptblox-feed.ps1 not found; skipping run."
+            exit 0
+          }
+
+          pwsh -NoProfile -File ./refresh-scriptblox-feed.ps1 `
             -Force `
             -MaxPages ([int]$maxPages) `
             -DelayMs ([int]$delayMs) `
@@ -45,13 +50,22 @@ jobs:
             -BlacklistOwnerDelayMs 900 `
             -MinimumKeepRatio 35
 
+          if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Refresh script exited with code $LASTEXITCODE. Keeping previous feed files."
+            exit 0
+          }
+
       - name: Commit updated feed files
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add scriptblox-feed.json scriptblox-feed.js scriptblox-owner-cache.json scriptblox-refresh-state.json moderation/auto-blacklist-titles.txt moderation/auto-blacklist-log.jsonl
+          for f in scriptblox-feed.json scriptblox-feed.js scriptblox-owner-cache.json scriptblox-refresh-state.json moderation/auto-blacklist-titles.txt moderation/auto-blacklist-log.jsonl; do
+            if [ -f "$f" ]; then
+              git add "$f"
+            fi
+          done
 
           if git diff --cached --quiet; then
             echo "No feed changes to commit."

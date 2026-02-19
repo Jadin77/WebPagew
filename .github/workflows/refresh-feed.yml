@@ -8,7 +8,7 @@ on:
       max_pages:
         description: "Max pages for this run"
         required: false
-        default: "6"
+        default: "40"
       delay_ms:
         description: "Delay between page pulls (ms)"
         required: false
@@ -40,7 +40,7 @@ jobs:
         shell: pwsh
         run: |
           $maxPages = "${{ github.event.inputs.max_pages }}"
-          if (-not $maxPages) { $maxPages = "6" }
+          if (-not $maxPages) { $maxPages = "40" }
           $delayMs = "${{ github.event.inputs.delay_ms }}"
           if (-not $delayMs) { $delayMs = "1400" }
 

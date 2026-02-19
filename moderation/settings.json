@@ -1,5 +1,6 @@
 {
   "max_posts_per_window": 3,
   "max_user_posts_per_window": 3,
+  "unresolved_new_post_quarantine_minutes": 240,
   "window_minutes": 10
 }

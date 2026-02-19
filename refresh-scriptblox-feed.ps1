@@ -210,6 +210,7 @@ Ensure-File -Path $settingsPath -DefaultContent @"
 {
   "max_posts_per_window": 3,
   "max_user_posts_per_window": 3,
+  "unresolved_new_post_quarantine_minutes": 240,
   "window_minutes": 10
 }
 "@
@@ -239,18 +240,20 @@ IHeartCoding
 Ensure-File -Path $autoBlacklistTitlesPath -DefaultContent "# Auto-generated normalized titles`r`n"
 Ensure-File -Path $autoLogPath
 
-$settingsDefault = @{ max_posts_per_window = 3; max_user_posts_per_window = 3; window_minutes = 10 }
+$settingsDefault = @{ max_posts_per_window = 3; max_user_posts_per_window = 3; unresolved_new_post_quarantine_minutes = 240; window_minutes = 10 }
 $settings = $settingsDefault
 try {
   $parsed = Get-Content $settingsPath -Raw | ConvertFrom-Json
   if ($parsed.max_posts_per_window) { $settings.max_posts_per_window = [int]$parsed.max_posts_per_window }
   if ($parsed.max_user_posts_per_window) { $settings.max_user_posts_per_window = [int]$parsed.max_user_posts_per_window }
+  if ($parsed.unresolved_new_post_quarantine_minutes) { $settings.unresolved_new_post_quarantine_minutes = [int]$parsed.unresolved_new_post_quarantine_minutes }
   if ($parsed.window_minutes) { $settings.window_minutes = [int]$parsed.window_minutes }
 } catch {
   Write-Warning "Invalid moderation/settings.json; using defaults."
 }
 $maxPostsPerWindow = [Math]::Max(1, [int]$settings.max_posts_per_window)
 $maxUserPostsPerWindow = [Math]::Max(1, [int]$settings.max_user_posts_per_window)
+$unresolvedQuarantineMinutes = [Math]::Max(0, [int]$settings.unresolved_new_post_quarantine_minutes)
 $windowMinutes = [Math]::Max(1, [int]$settings.window_minutes)
 
 $blacklistRules = Build-KeywordRules -Lines (Read-Lines -Path $blacklistKeywordsPath)
@@ -619,7 +622,9 @@ $visibleScripts = @()
 $filteredKeywordCount = 0
 $filteredSpamCount = 0
 $filteredOwnerBurstCount = 0
+$filteredUnresolvedNewCount = 0
 $filteredUserCount = 0
+$nowUtc = (Get-Date).ToUniversalTime()
 foreach ($s in $rawScripts) {
   $blockedByOwnerSlug = $s.slug -and $blockedSlugsByOwner.Contains([string]$s.slug)
   if ($s.ownerUsername) {
@@ -649,6 +654,17 @@ foreach ($s in $rawScripts) {
     $filteredSpamCount++
     continue
   }
+  if (-not $s.ownerUsername -and -not $s.trusted -and $unresolvedQuarantineMinutes -gt 0) {
+    $createdUtc = Get-UtcDateOrNull $s.createdAt
+    if ($createdUtc) {
+      $ageMin = ($nowUtc - $createdUtc).TotalMinutes
+      if ($ageMin -ge 0 -and $ageMin -le $unresolvedQuarantineMinutes) {
+        $filteredUnresolvedNewCount++
+        $filteredSpamCount++
+        continue
+      }
+    }
+  }
   if ($s.blocked_spam -and -not $s.trusted) {
     $filteredSpamCount++
     continue
@@ -668,11 +684,13 @@ $out = [PSCustomObject]@{
   moderation = [PSCustomObject]@{
     max_posts_per_window = $maxPostsPerWindow
     max_user_posts_per_window = $maxUserPostsPerWindow
+    unresolved_new_post_quarantine_minutes = $unresolvedQuarantineMinutes
     window_minutes = $windowMinutes
     filteredByKeywordCount = $filteredKeywordCount
     filteredByUserCount = $filteredUserCount
     filteredBySpamCount = $filteredSpamCount
     filteredByOwnerBurstCount = $filteredOwnerBurstCount
+    filteredByUnresolvedNewCount = $filteredUnresolvedNewCount
     filteredCount = ($filteredKeywordCount + $filteredUserCount + $filteredSpamCount)
     autoBlacklistedTitleCount = $autoTitleKeys.Count
     newlyAutoBlacklistedTitleCount = $newAutoTitleKeys.Count

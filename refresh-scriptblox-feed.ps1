@@ -7,6 +7,7 @@ param(
   [int]$BlacklistOwnerPages = 3,
   [int]$BlacklistOwnerDelayMs = 900,
   [int]$MinimumKeepRatio = 35,
+  [switch]$FailOnEmpty,
   [switch]$Force
 )
 
@@ -365,7 +366,8 @@ foreach ($t in $trendScripts) {
 $rawScripts = @($bySlug.Values | Sort-Object @{Expression = { $_.createdAt }; Descending = $true })
 if ($rawScripts.Count -eq 0) {
   Write-Warning "No scripts fetched (likely temporary rate limit). Existing feed files were left unchanged."
-  exit 1
+  if ($FailOnEmpty) { exit 1 }
+  exit 0
 }
 foreach ($s in $rawScripts) {
   $s | Add-Member -NotePropertyName trending -NotePropertyValue ($trendingSlugs.Contains([string]$s.slug) ) -Force

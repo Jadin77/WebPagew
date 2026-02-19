@@ -416,10 +416,11 @@ foreach ($c in $rollingCacheItems) {
   $title = [string]$c.title
   $titleKey = if ($c.titleKey) { [string]$c.titleKey } else { Normalize-Text $title }
   $ownerUsername = Normalize-OwnerUsername $c.ownerUsername
-  $trustedByUser = [bool]$c.trustedByUser
-  $trusted = [bool]$c.trusted
-  $blockedByUser = [bool]$c.blocked_user
-  $manualBlacklisted = [bool]$c.blocked_manual_keyword
+  $trustedByUser = [bool]($ownerUsername -and $trustedUsers.Contains($ownerUsername))
+  $trustedByKeyword = Test-MatchByRules -Title $title -Rules $trustedRules
+  $trusted = [bool]($trustedByKeyword -or $trustedByUser)
+  $blockedByUser = [bool](($ownerUsername -and $blacklistUsers.Contains($ownerUsername)) -or ($slug -and $blockedSlugsByOwner.Contains($slug)))
+  $manualBlacklisted = [bool](Test-MatchByRules -Title $title -Rules $blacklistRules)
 
   $tags = @()
   if ($c.tags) { $tags = @($c.tags | Where-Object { $_ -ne $null -and "$_".Trim() -ne "" }) }

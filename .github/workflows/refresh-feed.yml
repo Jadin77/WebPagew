@@ -24,9 +24,9 @@ jobs:
       - name: Clone repository
         shell: bash
         run: |
-          git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" repo
+          git clone "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" repo
           cd repo
-          git checkout "${GITHUB_REF_NAME}"
+          git checkout "${{ github.ref_name }}"
 
       - name: Refresh feed
         shell: pwsh

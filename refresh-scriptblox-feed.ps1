@@ -7,6 +7,7 @@ param(
   [int]$BlacklistOwnerPages = 3,
   [int]$BlacklistOwnerDelayMs = 900,
   [int]$MinimumKeepRatio = 35,
+  [int]$RetentionDays = 7,
   [switch]$FailOnEmpty,
   [switch]$Force
 )
@@ -21,6 +22,7 @@ if ($MinIntervalMinutes -lt 0) { throw "MinIntervalMinutes cannot be negative." 
 if ($BlacklistOwnerPages -lt 0) { throw "BlacklistOwnerPages cannot be negative." }
 if ($BlacklistOwnerDelayMs -lt 0) { throw "BlacklistOwnerDelayMs cannot be negative." }
 if ($MinimumKeepRatio -lt 0 -or $MinimumKeepRatio -gt 100) { throw "MinimumKeepRatio must be between 0 and 100." }
+if ($RetentionDays -lt 1 -or $RetentionDays -gt 60) { throw "RetentionDays must be between 1 and 60." }
 
 # Performance-first default: owner enrichment is opt-in (set MaxDetailLookupsPerRun > 0).
 
@@ -43,6 +45,16 @@ function Normalize-ApiDateUtcString {
   } catch {
     $s = [string]$Value
     return $s.Trim()
+  }
+}
+
+function Get-UtcDateOrNull {
+  param([object]$Value)
+  if ($null -eq $Value) { return $null }
+  try {
+    return ([datetime]$Value).ToUniversalTime()
+  } catch {
+    return $null
   }
 }
 
@@ -248,6 +260,9 @@ $blockedSlugsByOwner = Get-BlockedSlugsByOwners -Users $blacklistUsers -OwnerPag
 
 $baseApi = "https://scriptblox.com/api/script/fetch?mode=free&sortBy=createdAt&order=desc"
 $ownerCachePath = Join-Path $PSScriptRoot "scriptblox-owner-cache.json"
+$rollingCachePath = Join-Path $PSScriptRoot "scriptblox-rolling-cache.json"
+$retentionCutoffUtc = (Get-Date).ToUniversalTime().AddDays(-1 * [double]$RetentionDays)
+$rollingCacheItems = @()
 $ownerCache = @{}
 if (Test-Path $ownerCachePath) {
   try {
@@ -257,6 +272,18 @@ if (Test-Path $ownerCachePath) {
     }
   } catch {
     Write-Warning "Could not parse scriptblox-owner-cache.json; starting with empty owner cache."
+  }
+}
+if (Test-Path $rollingCachePath) {
+  try {
+    $rollingRaw = Get-Content $rollingCachePath -Raw | ConvertFrom-Json
+    if ($rollingRaw -and $rollingRaw.scripts) {
+      $rollingCacheItems = @($rollingRaw.scripts)
+    } elseif ($rollingRaw) {
+      $rollingCacheItems = @($rollingRaw)
+    }
+  } catch {
+    Write-Warning "Could not parse scriptblox-rolling-cache.json; continuing without rolling cache."
   }
 }
 
@@ -375,7 +402,53 @@ foreach ($t in $trendScripts) {
   }
 }
 
-$rawScripts = @($bySlug.Values | Sort-Object @{Expression = { $_.createdAt }; Descending = $true })
+# Merge rolling cache items so we keep a retention window without deep pulling every run.
+foreach ($c in $rollingCacheItems) {
+  $slug = [string]$c.slug
+  if (-not $slug) { continue }
+  if ($bySlug.ContainsKey($slug)) { continue }
+  $createdAtUtc = Get-UtcDateOrNull $c.createdAt
+  if (-not $createdAtUtc) { continue }
+  if ($createdAtUtc -lt $retentionCutoffUtc) { continue }
+
+  $title = [string]$c.title
+  $titleKey = if ($c.titleKey) { [string]$c.titleKey } else { Normalize-Text $title }
+  $ownerUsername = Normalize-OwnerUsername $c.ownerUsername
+  $trustedByUser = [bool]$c.trustedByUser
+  $trusted = [bool]$c.trusted
+  $blockedByUser = [bool]$c.blocked_user
+  $manualBlacklisted = [bool]$c.blocked_manual_keyword
+
+  $tags = @()
+  if ($c.tags) { $tags = @($c.tags | Where-Object { $_ -ne $null -and "$_".Trim() -ne "" }) }
+
+  $bySlug[$slug] = [PSCustomObject]@{
+    title = $title
+    titleKey = $titleKey
+    slug = $slug
+    views = [int]$c.views
+    verified = [bool]$c.verified
+    tags = $tags
+    image = Normalize-ImageUrl $c.image
+    createdAt = Normalize-ApiDateUtcString $createdAtUtc
+    ownerUsername = $ownerUsername
+    ownerProfilePicture = Normalize-ImageUrl $c.ownerProfilePicture
+    trusted = [bool]($trusted -or $trustedByUser)
+    trustedByUser = [bool]$trustedByUser
+    blocked_user = [bool]$blockedByUser
+    blocked_manual_keyword = [bool]$manualBlacklisted
+    blocked_spam = [bool]$c.blocked_spam
+  }
+}
+
+$rawScripts = @(
+  $bySlug.Values |
+    Where-Object {
+      $dt = Get-UtcDateOrNull $_.createdAt
+      $dt -and $dt -ge $retentionCutoffUtc
+    } |
+    Sort-Object @{Expression = { $_.createdAt }; Descending = $true }
+)
 if ($rawScripts.Count -eq 0) {
   Write-Warning "No scripts fetched (likely temporary rate limit). Existing feed files were left unchanged."
   if ($FailOnEmpty) { exit 1 }
@@ -429,6 +502,17 @@ try {
   ($ownerCache | ConvertTo-Json -Depth 6) | Set-Content -Path $ownerCachePath -Encoding utf8
 } catch {
   Write-Warning "Could not write scriptblox-owner-cache.json"
+}
+try {
+  $rollingOut = [PSCustomObject]@{
+    generatedAt = (Get-Date).ToUniversalTime().ToString("o")
+    retentionDays = $RetentionDays
+    count = $rawScripts.Count
+    scripts = $rawScripts
+  }
+  $rollingOut | ConvertTo-Json -Depth 8 | Set-Content -Path $rollingCachePath -Encoding utf8
+} catch {
+  Write-Warning "Could not write scriptblox-rolling-cache.json"
 }
 
 # Anti-spam by repeated title key in configured time window.

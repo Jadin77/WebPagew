@@ -2,6 +2,7 @@
   "max_posts_per_window": 3,
   "max_user_posts_per_window": 3,
   "max_new_posts_per_author_per_run": 5,
-  "unresolved_new_post_quarantine_minutes": 240,
+  "max_stale_validations_per_run": 120,
+  "unresolved_new_post_quarantine_minutes": 60,
   "window_minutes": 10
 }

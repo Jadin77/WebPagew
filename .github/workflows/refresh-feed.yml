@@ -24,9 +24,16 @@ jobs:
       - name: Clone repository
         shell: bash
         run: |
-          git clone "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" repo
+          git clone "https://github.com/${{ github.repository }}.git" repo
           cd repo
           git checkout "${{ github.ref_name }}"
+
+      - name: Debug context
+        shell: bash
+        run: |
+          echo "repo=${{ github.repository }}"
+          echo "ref=${{ github.ref_name }}"
+          ls -la
 
       - name: Refresh feed
         shell: pwsh
@@ -64,6 +71,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
 
           for f in scriptblox-feed.json scriptblox-feed.js scriptblox-owner-cache.json scriptblox-refresh-state.json moderation/auto-blacklist-titles.txt moderation/auto-blacklist-log.jsonl; do
             if [ -f "$f" ]; then

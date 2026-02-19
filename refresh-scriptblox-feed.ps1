@@ -7,7 +7,7 @@ param(
   [int]$BlacklistOwnerPages = 3,
   [int]$BlacklistOwnerDelayMs = 900,
   [int]$MinimumKeepRatio = 35,
-  [int]$RetentionDays = 21,
+  [int]$RetentionDays = 30,
   [int]$MaxVisibleScripts = 3360,
   [switch]$FailOnEmpty,
   [switch]$Force

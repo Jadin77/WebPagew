@@ -253,10 +253,29 @@
       .exclude-row {
         display: flex;
         align-items: center;
-        justify-content: flex-end;
+        justify-content: space-between;
         gap: 10px;
         margin: 0 0 14px;
         flex-wrap: wrap;
+      }
+      .left-controls {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .page-size-label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      .page-size-select {
+        padding: 7px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.18);
+        background: rgba(255,255,255,0.08);
+        color: var(--text);
+        font-weight: 600;
       }
       .keyword-toggle-bar {
         display: flex;
@@ -612,6 +631,15 @@
           </div>
         </div>
         <div class="exclude-row">
+          <div class="left-controls">
+            <label class="page-size-label" for="page-size-select">Cards / Page</label>
+            <select id="page-size-select" class="page-size-select" aria-label="Cards per page">
+              <option value="12">12</option>
+              <option value="24" selected>24</option>
+              <option value="36">36</option>
+              <option value="48">48</option>
+            </select>
+          </div>
           <div id="keyword-toggle-bar" class="keyword-toggle-bar"></div>
         </div>
         <div id="script-feed" class="grid"></div>
@@ -658,7 +686,8 @@
       let allScripts = [];
       let visibleScripts = [];
       let page = 1;
-      const perPage = 24;
+      const perPageStorageKey = "webpage_script_per_page_v1";
+      let perPage = 24;
       const fallbackImage = "https://placehold.co/600x340/163a63/f5f7fb?text=Script";
       let loadingFeed = false;
       let filterMode = "all";
@@ -673,6 +702,30 @@
         { id: "junk", label: "No Junk", tokens: ["free", "dupe", "admin", "fake"] }
       ];
       let localHideState = {};
+
+      function loadPerPage() {
+        try {
+          const raw = localStorage.getItem(perPageStorageKey);
+          const n = parseInt(raw || "24", 10);
+          if (!Number.isFinite(n)) return 24;
+          if (n !== 12 && n !== 24 && n !== 36 && n !== 48) return 24;
+          return n;
+        } catch (_) {
+          return 24;
+        }
+      }
+
+      function savePerPage(value) {
+        try {
+          localStorage.setItem(perPageStorageKey, String(value));
+        } catch (_) {}
+      }
+
+      function syncPerPageSelect() {
+        const el = document.getElementById("page-size-select");
+        if (!el) return;
+        el.value = String(perPage);
+      }
 
       function normalizeImageUrl(value) {
         if (typeof value !== "string") return "";
@@ -784,6 +837,8 @@
       }
 
       localHideState = loadLocalToggleState();
+      perPage = loadPerPage();
+      syncPerPageSelect();
 
       function buildCard(script) {
         const title = escapeHtml(script?.title || "Untitled Script");
@@ -865,6 +920,7 @@
           prev.disabled = true;
           next.disabled = true;
           jumpWrap.style.display = "none";
+          document.getElementById("page-size-select").disabled = true;
           return;
         }
 
@@ -879,6 +935,7 @@
         prev.disabled = page <= 1;
         next.disabled = page >= total;
         jumpWrap.style.display = "flex";
+        document.getElementById("page-size-select").disabled = false;
         slider.max = String(total);
         slider.value = String(page);
         input.max = String(total);
@@ -1034,6 +1091,19 @@
           applyTabs();
         }
       });
+      document.getElementById("page-size-select").addEventListener("change", function (e) {
+        const n = parseInt(String(e.target.value || "24"), 10);
+        if (!Number.isFinite(n)) return;
+        perPage = (n === 12 || n === 24 || n === 36 || n === 48) ? n : 24;
+        savePerPage(perPage);
+        syncPerPageSelect();
+        page = 1;
+        if (filterMode === "trustedUsers") {
+          renderPage();
+        } else {
+          applyTabs();
+        }
+      });
       document.getElementById("copy-discord").addEventListener("click", async function () {
         const btn = this;
         try {
@@ -1161,7 +1231,6 @@
     </script>
   </body>
 </html>
-
 
 
 

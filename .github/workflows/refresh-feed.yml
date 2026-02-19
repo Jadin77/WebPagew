@@ -86,7 +86,7 @@ jobs:
             -BlacklistOwnerPages 2 `
             -BlacklistOwnerDelayMs 900 `
             -MinimumKeepRatio 35 `
-            -RetentionDays 21 `
+            -RetentionDays 30 `
             -MaxVisibleScripts $targetScripts
 
           if ($LASTEXITCODE -ne 0) {

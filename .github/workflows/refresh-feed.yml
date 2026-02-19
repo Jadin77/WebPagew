@@ -41,6 +41,7 @@ jobs:
         run: |
           $maxPages = "${{ github.event.inputs.max_pages }}"
           if (-not $maxPages) { $maxPages = "40" }
+          if ([int]$maxPages -lt 40) { $maxPages = "40" }
           $delayMs = "${{ github.event.inputs.delay_ms }}"
           if (-not $delayMs) { $delayMs = "1400" }
 

@@ -34,6 +34,18 @@ function Normalize-OwnerUsername {
   return $username
 }
 
+function Normalize-ApiDateUtcString {
+  param([object]$Value)
+  if ($null -eq $Value) { return "" }
+  try {
+    $dt = [datetime]$Value
+    return $dt.ToUniversalTime().ToString("o")
+  } catch {
+    $s = [string]$Value
+    return $s.Trim()
+  }
+}
+
 function Ensure-File {
   param([string]$Path, [string]$DefaultContent = "")
   if (-not (Test-Path $Path)) {
@@ -293,7 +305,7 @@ for ($page = 1; $page -le $MaxPages; $page++) {
       verified = [bool]$s.verified
       tags = $tags
       image = $img
-      createdAt = [string]$s.createdAt
+      createdAt = Normalize-ApiDateUtcString $s.createdAt
       ownerUsername = $ownerUsername
       ownerProfilePicture = $ownerProfilePicture
       trusted = [bool]($trusted -or $trustedByUser)
@@ -352,7 +364,7 @@ foreach ($t in $trendScripts) {
     verified = [bool]$t.verified
     tags = $tags
     image = $img
-    createdAt = [string]$t.createdAt
+    createdAt = Normalize-ApiDateUtcString $t.createdAt
     ownerUsername = $ownerUsername
     ownerProfilePicture = $ownerProfilePicture
     trusted = [bool]($trusted -or $trustedByUser)

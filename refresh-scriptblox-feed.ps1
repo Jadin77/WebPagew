@@ -594,7 +594,8 @@ foreach ($s in $rawScripts) {
     $filteredUserCount++
     continue
   }
-  if ($s.blocked_manual_keyword) {
+  # Trusted scripts/users bypass manual keyword blacklist.
+  if ($s.blocked_manual_keyword -and -not $s.trusted) {
     $filteredKeywordCount++
     continue
   }

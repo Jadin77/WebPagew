@@ -1,0 +1,8 @@
+﻿{
+  "heroDescription": "Dedicated page for Studio services and assets.",
+  "items": [
+    { "title": "Studio Product A", "description": "Add details, proof, and feature list.", "image": "images/roblox-studio/Product A.svg", "link": "#" },
+    { "title": "Studio Product B", "description": "Add details, proof, and feature list.", "image": "images/roblox-studio/Product B.svg", "link": "#" },
+    { "title": "Studio Product C", "description": "Add details, proof, and feature list.", "image": "images/roblox-studio/Product C.svg", "link": "#" }
+  ]
+}

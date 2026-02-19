@@ -1,0 +1,8 @@
+﻿{
+  "heroDescription": "Dedicated page for apps and tools.",
+  "items": [
+    { "title": "Program A", "description": "Add details, proof, and feature list.", "image": "images/programs/Product A.svg", "link": "#" },
+    { "title": "Program B", "description": "Add details, proof, and feature list.", "image": "images/programs/Product B.svg", "link": "#" },
+    { "title": "Program C", "description": "Add details, proof, and feature list.", "image": "images/programs/Product C.svg", "link": "#" }
+  ]
+}

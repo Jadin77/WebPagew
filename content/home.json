@@ -1,0 +1,31 @@
+﻿{
+  "slides": [
+    {
+      "title": "Roblox Scripts",
+      "kicker": "FEATURED DROP",
+      "text": "Main script products and packs with dedicated detail sections.",
+      "cta": "Open Scripts Page",
+      "href": "roblox-scripts.html",
+      "image": "images/roblox-scripts/Product A.svg",
+      "imageLabel": "Featured Scripts"
+    },
+    {
+      "title": "Roblox Studio",
+      "kicker": "FEATURED DROP",
+      "text": "Studio services, tools, and resources with room for full listings.",
+      "cta": "Open Studio Page",
+      "href": "roblox-studio.html",
+      "image": "images/roblox-studio/Product A.svg",
+      "imageLabel": "Studio Assets"
+    },
+    {
+      "title": "Programs",
+      "kicker": "FEATURED DROP",
+      "text": "External apps and program bundles in a dedicated full page.",
+      "cta": "Open Programs Page",
+      "href": "programs.html",
+      "image": "images/programs/Product A.svg",
+      "imageLabel": "Desktop Tools"
+    }
+  ]
+}

@@ -1,0 +1,508 @@
+Migration
+Migration steps to the new API
+On March 28th, 2025, ScriptBlox has entered a new reality. With growing popularity and increased traffic, there was a limit to how many performance improvements, new features, and bug fixes we can release on the website alone. We understood that in order to meet the new demands, we must also begin updating our API.
+
+From that day on, we are actively looking for ways to optimize our API structure and responses.
+
+For each such change that requires adaptation in services utilizing the API, this page will provide the exact change, release date, the reasoning, and the migration steps for the change.
+
+Changes to script searching/fetching endpoints (released: March 28, 2025)
+The script search and fetch endpoints have received a major change in accepted parameters.
+
+What changed
+The filters parameter has been deprecated in favor of more explicit, separate parameters.
+
+Reason for change
+Having separate top level parameters for filters provides more explicit context for the request. It avoids ambiguity between filters and sorts and makes it easier to expand and provide more thorough and fine-tuned filtering capabilities.
+
+Migration steps
+Remove all filters and replace each with their respective top level parameter.
+
+filters=paid/filters=free has been removed entirely due to the existence of the mode parameter (mode=paid/mode=free)
+
+- https://scriptblox.com/api/script/fetch?filters=free
++ https://scriptblox.com/api/script/fetch?mode=free
+filters=verified/filters=unverified should be replaced with the verified parameter (verified=1/verified=0)
+
+- https://scriptblox.com/api/script/fetch?filters=unverified
++ https://scriptblox.com/api/script/fetch?verified=0
+filters=newest/filters=oldest/filters=mostviewed/filters=leastviewed should be replaced with the order parameter along with the sortBy parameter (sortBy=createdAt&order=desc/sortBy=createdAt&order=asc/sortBy=views&order=desc/sortBy=views&order=asc)
+
+- https://scriptblox.com/api/script/fetch?filters=mostviewed
++ https://scriptblox.com/api/script/fetch?sortBy=views&order=desc
+filters=hot should be replaced with a request to the dedicated endpoint. More information here.
+
+- https://scriptblox.com/api/script/fetch?filters=hot
++ https://scriptblox.com/api/script/trending
+Fallback grace period
+The grace period has expired. The grace period explanation is reserved for historic purposes
+If migration isn't possible immediately, a grace period is provided during which you must add the legacy_filters parameter to the request (legacy_filters=true).
+
+
+- https://scriptblox.com/api/script/fetch?filters=verified
++ https://scriptblox.com/api/script/fetch?filters=verified&legacy_filters=true
+Without this parameter, your queries will result in an error.
+
+This is done to ensure you have adequate time to migrate safely and without long term disruptions.
+
+However, once the grace period expires, this parameter will be sunset and lose all effect, and you will be met with an error response if the filters key is kept in use.
+
+Changes to script tags (released: March 28, 2025)
+The tags have had a change in structure.
+
+What changed
+The tags are now a plain array of strings, as opposed to an array of objects.
+
+Reason for change
+The previous approach did not have much benefit, as it was contributing to more clutter and payload size, and have not had any effect on the overall behavior. The new approach simplifies it, and brings some performance improvements to our end.
+
+Migration steps
+Remove all references to _id and id in tags, as these have been removed.
+
+Remove all references to name, as the tag is now the value.
+
+tag["name"] -> tag
+
+Fallback grace period
+The grace period has expired. The grace period explanation is reserved for historic purposes
+If migration isn't possible immediately, a grace period is provided during which you can add the legacy_tags parameter to the request (legacy_tags=true), that will return the tags to the previous state (albeit with randomized ID's).
+
+
+- https://scriptblox.com/api/script/[slug]
++ https://scriptblox.com/api/script/[slug]?legacy_tags=true
+Changes to script images (released: March 28, 2025)
+The images of scripts have been slightly changed in structure.
+
+What changed
+The images of the scripts have been moved into the direct image property.
+
+Reason for change
+The new approach heavily simplifies game handling on our end. It brings major performance improvements and allows us to better handle fallback images if a custom image is unavailable. Additionally, it brings us the future capabilities to further expand the script filtering system by game.
+
+Migration steps
+All references of game.imageUrl should be replaced with image.
+
+game["imageUrl"] -> image
+
+Fallback grace period
+The grace period has expired. The grace period explanation is reserved for historic purposes
+If migration isn't possible immediately, a grace period is provided during which you can add the legacy_img parameter to the request (legacy_img=true), that will return the image in the game.imageUrl, as it was previously.
+
+
+- https://scriptblox.com/api/script/[slug]
++ https://scriptblox.com/api/script/[slug]?legacy_img=true
+
+
+
+Integrations
+ScriptBlox API integrations
+Implementing the ScriptBlox API directly gives you the greatest control over how you use it and interact with it. However, you may not want to deal with the trouble of implementing the API calls yourself. In such case, you can use one of the existing community-made libraries that provide a convenient wrapper around the API.
+
+Below, we will list some of the most popular integrations that are available for use. If you have an integration that you would like to see listed here, please contact us on our Discord server.
+
+Integrations
+C# integrations
+ScriptBloxApi - Supports all current endpoints, developed by RiisDev.
+None yet!
+JS integrations
+scriptblox-api - Supports all current endpoints, developed by YellowGregs.
+ScriptBlox.js - Supports all current endpoints, developed by xbcq1490.
+Luau integrations
+None yet!
+
+
+Trending
+Fetch the currently trending scripts
+Fetching/searching is great to look through the ScriptBlox script catalogue and see what there is, but what about top scripts at the moment?
+
+For this exact purpose, we have the trending endpoint, that returns a targetted list of the scripts that received the most interactions from the community.
+
+API Path
+The API path for this endpoint is /api/script/trending
+
+Parameters
+The trending endpoint receives no parameters.
+
+Response
+The response, unless errored, would be of the following structure:
+
+
+{
+    "result": {
+        "max": number,
+        "scripts": [
+            {
+                "_id": "string",
+                "title": "string",
+                "game": {
+                    "_id": "string",
+                    "name": "string",
+                    "imageUrl": "string"
+                },
+                "slug": "string",
+                "verified": boolean,
+                "key": boolean,
+                "views": number,
+                "scriptType": "string",
+                "isPatched": boolean,
+                "isUniversal": boolean,
+                "createdAt": "string",
+                "image": "string",
+            },
+            ...
+        ]
+    }
+}
+If an error occurs, the response will contain a single message field:
+
+
+{
+    "message": "string"
+}
+
+
+
+
+Search scripts
+Search for scripts based on a query and filters
+The search endpoint behaves very similarly to the fetch endpoint, and is designed specifically for searching throughout the scripts catalogue. Unlike the fetch endpoint, the search query (q) is required.
+
+API Path
+The API path for this endpoint is /api/script/search
+
+Parameters
+Like the fetch endpoint, the search endpoint also accepts a list of parameters to make more targetted and narrower queries.
+
+The accepted parameters are:
+
+Parameter	Description	Required	Type	Default
+q	The search query	✅	string	-
+page	The page to start fetching from (useful for paginating content)	❌	number	1
+max	Maximum amount of scripts to fetch in a batch	❌	Any positive number up to 20	20
+mode	The script type	❌	free or paid	-
+patched	Whether or not the script is patched	❌	1 (yes) or 0 (no)	-
+key	Whether or not the script has a key system	❌	1 (yes) or 0 (no)	-
+universal	Whether or not the script is universal	❌	1 (yes) or 0 (no)	-
+verified	Whether or not the script is verified	❌	1 (yes) or 0 (no)	-
+sortBy	Used to control the criteria by which to sort the results	❌	views | likeCount | createdAt | updatedAt | dislikeCount | accuracy	updatedAt
+order	The sort order	❌	asc (ascending) or desc (descending)	desc
+strict	Whether to enable strict searching	❌	true (yes) or false (no)	true
+owner	The username to filter by	❌	string	-
+placeId	The game ID to filter by	❌	number	-
+Response
+The response, unless errored, would be of the following structure:
+
+
+{
+    "result": {
+        "totalPages": number,
+        "scripts": [
+            {
+                "_id": "string",
+                "title": "string",
+                "game": {
+                    "_id": "string",
+                    "name": "string",
+                    "imageUrl": "string"
+                },
+                "slug": "string",
+                "verified": boolean,
+                "key": boolean,
+                "views": number,
+                "scriptType": "string",
+                "isUniversal": boolean,
+                "isPatched": boolean,
+                "createdAt": "string",
+                "updatedAt": "string",
+                "image": "string",
+                "script": "string",
+                "matched": [
+                    "string",
+                    ...
+                ]
+            },
+            ...
+        ]
+    }
+}
+If an error occurs, the response will contain a single message field:
+
+
+{
+    "message": "string"
+}
+Usage
+
+cs-example.cs
+
+js-example.js
+
+roblox-example-server.luau
+
+roblox-example-client.luau
+
+4
+
+using System.Text.Json;
+using System.Net.Http.Json;
+
+public async Task FetchScripts() {
+    HttpClient client = new HttpClient();
+    try {
+        JsonElement scripts = await client.GetFromJsonAsync<JsonElement>("https://scriptblox.com/api/script/search?q=admin"); // 20 most recent scripts that relate to "admin"
+        foreach(JsonElement script in scripts.GetProperty("result").GetProperty("scripts")) {
+            // Use the script to, for example, display it in a window/page
+            Application.Current.Dispatcher.Invoke(() => {
+                // Example: ScriptPanel is a StackPanel defined in your XAML
+                ScriptPanel.Children.Add(new TextBlock(){
+                    Text = $"Title: {script.GetProperty("title").GetString()}\nSlug: \n{script.GetProperty("slug").GetString()}"
+                });
+            });
+        }
+    }
+    catch (HttpRequestException e)
+    {
+        // Network error or invalid URL
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            ScriptPanel.Children.Add(new TextBlock()
+            {
+                Text = $"Network error while fetching scripts:\n{e.Message}",
+                Margin = new Thickness(10)
+            });
+        });
+    }
+    catch (JsonException e)
+    {
+        // JSON parsing error
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            ScriptPanel.Children.Add(new TextBlock()
+            {
+                Text = $"Error parsing JSON response:\n{e.Message}",
+                Margin = new Thickness(10)
+            });
+        });
+    }
+    catch (Exception e)
+    {
+        // General exception
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            ScriptPanel.Children.Add(new TextBlock()
+            {
+                Text = $"Unexpected error:\n{e.Message}",
+                Margin = new Thickness(10)
+            });
+        });
+    }
+}
+
+
+
+
+
+Fetch individual scripts
+Obtain details for a specific script
+Fetching scripts is great when you want to look for scripts to use.
+
+However, if you already have a script in mind, fetching a list could be unnecessary, and in stead you may want to fetch that specific script alone.
+
+For that, we have a dedicated endpoint that returns the details of the script. Another endpoint is also provided if you just need its raw script.
+
+API Path
+The API path for this is divided into 2 endpoints:
+
+For the details of the script - The API path is /api/script/:script
+For the raw script - The API path is /api/script/raw/:script
+Parameters
+Both endpoints receive just a single parameter, script, which is the route parameter placed in the last portion of the API path.
+
+Parameter	Description	Required	Type	Default
+script	The script identifier	✅	string	-
+Response
+The response, unless errored, would be of the following structure:
+
+
+Details
+
+Raw script
+
+{
+    "script": {
+        "_id": "string",
+        "title": "string",
+        "game": {
+            "_id": "string",
+            "gameId": number,
+            "name": "string",
+            "imageUrl": "string"
+        },
+        "features": "string",
+        "tags": [
+            "string",
+            ...
+        ],
+        "script": "string",
+        "owner": {
+            "_id": "string",
+            "username": "string",
+            "verified": boolean,
+            "profilePicture": "string",
+            "status": "string",
+        },
+        "image": "string",
+        "slug": "string",
+        "verified": boolean,
+        "keyLink": "string",
+        "views": number,
+        "scriptType": "string",
+        "isUniversal": boolean,
+        "isPatched": boolean,
+        "visibility": "string",
+        "createdAt": "string",
+        "likeCount": number,
+        "dislikeCount": number,
+        "liked": boolean,
+        "disliked": boolean,
+        "isFav": boolean
+    }
+}
+If an error occurs, the response will contain a single message field:
+
+
+{
+    "message": "string"
+}
+
+
+
+
+Fetch scripts
+Fetch home page scripts or get filtered results
+The first endpoint, and likely one of those that will be used the most in your executor/script hub, is the fetch endpoint. This endpoint handles all general querying of ScriptBlox's script catalogue, and can be used along with filters to narrow down results.
+
+API Path
+The API path for this endpoint is /api/script/fetch
+
+Parameters
+In addition to plain requests for home page scripts, this endpoint accepts additional query parameters (filters) to narrow down results and make more targetted queries.
+
+The accepted parameters are:
+
+Parameter	Description	Required	Type	Default
+page	The page to start fetching from (useful for paginating content)	❌	number	1
+max	Maximum amount of scripts to fetch in a batch	❌	Any positive number up to 20	20
+exclude	Mainly internal, used to exclude a certain script from the results.	❌	Valid script ID	-
+mode	The script type	❌	free or paid	-
+patched	Whether or not the script is patched	❌	1 (yes) or 0 (no)	-
+key	Whether or not the script has a key system	❌	1 (yes) or 0 (no)	-
+universal	Whether or not the script is universal	❌	1 (yes) or 0 (no)	-
+verified	Whether or not the script is verified	❌	1 (yes) or 0 (no)	-
+sortBy	Used to control the criteria by which to sort the results	❌	views | likeCount | createdAt | updatedAt | dislikeCount	updatedAt
+order	The sort order	❌	asc (ascending) or desc (descending)	desc
+owner	The username to filter by	❌	string	-
+placeId	The game ID to filter by	❌	number	-
+Response
+The response, unless errored, would be of the following structure:
+
+
+{
+    "result": {
+        "totalPages": number,
+        "nextPage": number,
+        "max": number,
+        "scripts": [
+            {
+                "_id": "string",
+                "title": "string",
+                "game": {
+                    "_id": "string",
+                    "name": "string",
+                    "imageUrl": "string"
+                },
+                "slug": "string",
+                "verified": boolean,
+                "key": boolean,
+                "views": number,
+                "scriptType": "string",
+                "isUniversal": boolean,
+                "isPatched": boolean,
+                "image": "string",
+                "createdAt": "string",
+                "script": "string"
+            },
+            ...
+        ]
+    }
+}
+If an error occurs, the response will contain a single message field:
+
+
+{
+    "message": "string"
+}
+Usage
+
+cs-example.cs
+
+js-example.js
+
+roblox-example-server.luau
+
+roblox-example-client.luau
+
+using System.Text.Json;
+using System.Net.Http.Json;
+
+public async Task FetchScripts() {
+    HttpClient client = new HttpClient();
+    try {
+        JsonElement scripts = await client.GetFromJsonAsync<JsonElement>("https://scriptblox.com/api/script/fetch"); // 20 most recent scripts. Also known as home page scripts.
+        foreach(JsonElement script in scripts.GetProperty("result").GetProperty("scripts")) {
+            // Use the script to, for example, display it in a window/page
+            Application.Current.Dispatcher.Invoke(() => {
+                // Example: ScriptPanel is a StackPanel defined in your XAML
+                ScriptPanel.Children.Add(new TextBlock(){
+                    Text = $"Title: {script.GetProperty("title").GetString()}\nSlug: \n{script.GetProperty("slug").GetString()}"
+                });
+            });
+        }
+    }
+    catch (HttpRequestException e)
+    {
+        // Network error or invalid URL
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            ScriptPanel.Children.Add(new TextBlock()
+            {
+                Text = $"Network error while fetching scripts:\n{e.Message}",
+                Margin = new Thickness(10)
+            });
+        });
+    }
+    catch (JsonException e)
+    {
+        // JSON parsing error
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            ScriptPanel.Children.Add(new TextBlock()
+            {
+                Text = $"Error parsing JSON response:\n{e.Message}",
+                Margin = new Thickness(10)
+            });
+        });
+    }
+    catch (Exception e)
+    {
+        // General exception
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            ScriptPanel.Children.Add(new TextBlock()
+            {
+                Text = $"Unexpected error:\n{e.Message}",
+                Margin = new Thickness(10)
+            });
+        });
+    }
+}

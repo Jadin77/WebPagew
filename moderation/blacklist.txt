@@ -1,0 +1,3 @@
+# One ScriptBlox username per line.
+# Example:
+# bad_actor_123

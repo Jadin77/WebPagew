@@ -1,0 +1,8 @@
+﻿{
+  "heroDescription": "Dedicated page for your social links and communities.",
+  "items": [
+    { "title": "Discord", "description": "Add your invite link and short intro.", "image": "images/socials/Product A.svg", "link": "#" },
+    { "title": "YouTube", "description": "Add your invite link and short intro.", "image": "images/socials/Product B.svg", "link": "#" },
+    { "title": "TikTok", "description": "Add your invite link and short intro.", "image": "images/socials/Product C.svg", "link": "#" }
+  ]
+}

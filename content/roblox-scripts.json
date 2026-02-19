@@ -1,0 +1,8 @@
+﻿{
+  "heroDescription": "Dedicated page for script products.",
+  "items": [
+    { "title": "Script Product A", "description": "Add details, proof, and feature list.", "image": "images/roblox-scripts/Product A.svg", "link": "#" },
+    { "title": "Script Product B", "description": "Add details, proof, and feature list.", "image": "images/roblox-scripts/Product B.svg", "link": "#" },
+    { "title": "Script Product C", "description": "Add details, proof, and feature list.", "image": "images/roblox-scripts/Product C.svg", "link": "#" }
+  ]
+}

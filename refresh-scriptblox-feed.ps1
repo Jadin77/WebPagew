@@ -232,8 +232,8 @@ Ensure-File -Path $settingsPath -DefaultContent @"
   "max_posts_per_window": 3,
   "max_user_posts_per_window": 3,
   "max_new_posts_per_author_per_run": 5,
-  "max_stale_validations_per_run": 20,
-  "unresolved_new_post_quarantine_minutes": 240,
+  "max_stale_validations_per_run": 120,
+  "unresolved_new_post_quarantine_minutes": 60,
   "window_minutes": 10
 }
 "@
@@ -265,7 +265,7 @@ IHeartCoding
 Ensure-File -Path $autoBlacklistTitlesPath -DefaultContent "# Auto-generated normalized titles`r`n"
 Ensure-File -Path $autoLogPath
 
-$settingsDefault = @{ max_posts_per_window = 3; max_user_posts_per_window = 3; max_new_posts_per_author_per_run = 5; max_stale_validations_per_run = 20; unresolved_new_post_quarantine_minutes = 240; window_minutes = 10 }
+$settingsDefault = @{ max_posts_per_window = 3; max_user_posts_per_window = 3; max_new_posts_per_author_per_run = 5; max_stale_validations_per_run = 120; unresolved_new_post_quarantine_minutes = 60; window_minutes = 10 }
 $settings = $settingsDefault
 try {
   $parsed = Get-Content $settingsPath -Raw | ConvertFrom-Json
@@ -496,14 +496,14 @@ if ($rawScripts.Count -eq 0) {
   exit 0
 }
 
-# Remove stale cached entries that now hard-fail on detail endpoint (taken down/invalid).
+# Remove entries that now hard-fail on detail endpoint (taken down/invalid).
 $staleValidatedCount = 0
 $staleInvalidRemovedCount = 0
 if ($maxStaleValidationsPerRun -gt 0) {
   $invalidSlugs = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
   $staleCandidates = @(
     $rawScripts |
-      Where-Object { -not $_.isNewThisRun -and $_.slug } |
+      Where-Object { $_.slug } |
       Sort-Object @{Expression = { $_.createdAt }; Descending = $true } |
       Select-Object -First $maxStaleValidationsPerRun
   )

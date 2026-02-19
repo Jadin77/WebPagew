@@ -40,6 +40,32 @@ jobs:
           pwd
           ls -la
 
+      - name: Normalize moderation settings
+        shell: pwsh
+        run: |
+          $settingsPath = "./moderation/settings.json"
+          $settings = $null
+          if (Test-Path $settingsPath) {
+            try {
+              $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+            } catch {
+              $settings = $null
+            }
+          }
+          if (-not $settings) {
+            $settings = [pscustomobject]@{
+              max_posts_per_window = 3
+              max_user_posts_per_window = 3
+              max_new_posts_per_author_per_run = 5
+              max_stale_validations_per_run = 120
+              unresolved_new_post_quarantine_minutes = 60
+              window_minutes = 10
+            }
+          }
+          $settings.max_stale_validations_per_run = 120
+          $settings.unresolved_new_post_quarantine_minutes = 60
+          $settings | ConvertTo-Json -Depth 5 | Set-Content -Path $settingsPath -Encoding utf8
+
       - name: Refresh feed
         shell: pwsh
         run: |

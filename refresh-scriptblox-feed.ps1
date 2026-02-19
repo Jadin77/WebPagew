@@ -603,6 +603,13 @@ foreach ($group in $ownerGroups) {
   }
 }
 
+# Mark owner-burst spam explicitly on records before visibility filtering.
+foreach ($s in $rawScripts) {
+  if ($s.ownerUsername -and $burstBlockedOwners.Contains([string]$s.ownerUsername)) {
+    $s.blocked_spam = $true
+  }
+}
+
 $autoSorted = @($autoTitleKeys | Sort-Object)
 if ($autoSorted.Count -gt 0) {
   $autoSorted | Set-Content -Path $autoBlacklistTitlesPath -Encoding utf8
@@ -625,8 +632,8 @@ foreach ($s in $rawScripts) {
   }
 
   $autoBlocked = $s.titleKey -and $autoTitleKeys.Contains($s.titleKey)
+  if ($autoBlocked) { $s.blocked_spam = $true }
   $ownerBurstBlocked = $s.ownerUsername -and $burstBlockedOwners.Contains([string]$s.ownerUsername)
-  $s.blocked_spam = [bool]($autoBlocked -or $ownerBurstBlocked)
 
   if ($s.blocked_user -and -not $s.trustedByUser) {
     $filteredUserCount++

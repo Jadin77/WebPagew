@@ -719,6 +719,10 @@
         if (Number.isNaN(d.getTime())) return "";
         const now = Date.now();
         const diffMs = now - d.getTime();
+        if (diffMs < 0) {
+          // Handle minor clock/timezone skew gracefully.
+          if (Math.abs(diffMs) <= 12 * 60 * 60 * 1000) return "Just now";
+        }
         if (diffMs >= 0) {
           const diffMinutes = Math.floor(diffMs / 60000);
           if (diffMinutes < 60) {
@@ -736,8 +740,7 @@
             day: "numeric",
             hour: "numeric",
             minute: "2-digit",
-            hour12: true,
-            timeZone: "America/New_York"
+            hour12: true
           }).format(d);
         } catch (_) {
           return "";

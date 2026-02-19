@@ -2,7 +2,7 @@ name: Refresh ScriptBlox Feed
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch:
     inputs:
       max_pages:
@@ -13,6 +13,10 @@ on:
         description: "Delay between page pulls (ms)"
         required: false
         default: "1400"
+      target_pages:
+        description: "Target visible pages to maintain"
+        required: false
+        default: "100"
 
 permissions:
   contents: write
@@ -44,6 +48,28 @@ jobs:
           if ([int]$maxPages -lt 40) { $maxPages = "40" }
           $delayMs = "${{ github.event.inputs.delay_ms }}"
           if (-not $delayMs) { $delayMs = "1400" }
+          $targetPages = "${{ github.event.inputs.target_pages }}"
+          if (-not $targetPages) { $targetPages = "100" }
+          if ([int]$targetPages -lt 1) { $targetPages = "100" }
+          $targetScripts = [int]$targetPages * 24
+
+          $rollingCount = 0
+          if (Test-Path "./scriptblox-rolling-cache.json") {
+            try {
+              $rolling = Get-Content "./scriptblox-rolling-cache.json" -Raw | ConvertFrom-Json
+              if ($rolling.count) { $rollingCount = [int]$rolling.count }
+              elseif ($rolling.scripts) { $rollingCount = @($rolling.scripts).Count }
+            } catch {
+              $rollingCount = 0
+            }
+          }
+          if ($rollingCount -lt $targetScripts) {
+            if ([int]$maxPages -lt 140) { $maxPages = "140" }
+            if ([int]$delayMs -lt 1700) { $delayMs = "1700" }
+            Write-Host ("Bootstrap mode active: rolling cache {0}/{1}. Using MaxPages={2}, DelayMs={3}" -f $rollingCount, $targetScripts, $maxPages, $delayMs)
+          } else {
+            Write-Host ("Maintenance mode: rolling cache {0}/{1}" -f $rollingCount, $targetScripts)
+          }
 
           if (-not (Test-Path "./refresh-scriptblox-feed.ps1")) {
             Write-Warning "refresh-scriptblox-feed.ps1 not found; skipping run."
@@ -59,7 +85,9 @@ jobs:
             -MinIntervalMinutes 0 `
             -BlacklistOwnerPages 2 `
             -BlacklistOwnerDelayMs 900 `
-            -MinimumKeepRatio 35
+            -MinimumKeepRatio 35 `
+            -RetentionDays 14 `
+            -MaxVisibleScripts $targetScripts
 
           if ($LASTEXITCODE -ne 0) {
             Write-Warning "Refresh script exited with code $LASTEXITCODE. Keeping previous feed files."
@@ -72,7 +100,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          for f in scriptblox-feed.json scriptblox-feed.js scriptblox-owner-cache.json scriptblox-refresh-state.json moderation/auto-blacklist-titles.txt moderation/auto-blacklist-log.jsonl; do
+          for f in scriptblox-feed.json scriptblox-feed.js scriptblox-owner-cache.json scriptblox-refresh-state.json scriptblox-rolling-cache.json moderation/auto-blacklist-titles.txt moderation/auto-blacklist-log.jsonl; do
             if [ -f "$f" ]; then
               git add "$f"
             fi

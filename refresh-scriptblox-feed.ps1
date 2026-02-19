@@ -7,7 +7,8 @@ param(
   [int]$BlacklistOwnerPages = 3,
   [int]$BlacklistOwnerDelayMs = 900,
   [int]$MinimumKeepRatio = 35,
-  [int]$RetentionDays = 7,
+  [int]$RetentionDays = 14,
+  [int]$MaxVisibleScripts = 2400,
   [switch]$FailOnEmpty,
   [switch]$Force
 )
@@ -23,6 +24,7 @@ if ($BlacklistOwnerPages -lt 0) { throw "BlacklistOwnerPages cannot be negative.
 if ($BlacklistOwnerDelayMs -lt 0) { throw "BlacklistOwnerDelayMs cannot be negative." }
 if ($MinimumKeepRatio -lt 0 -or $MinimumKeepRatio -gt 100) { throw "MinimumKeepRatio must be between 0 and 100." }
 if ($RetentionDays -lt 1 -or $RetentionDays -gt 60) { throw "RetentionDays must be between 1 and 60." }
+if ($MaxVisibleScripts -lt 0) { throw "MaxVisibleScripts cannot be negative." }
 
 # Performance-first default: owner enrichment is opt-in (set MaxDetailLookupsPerRun > 0).
 
@@ -601,6 +603,9 @@ foreach ($s in $rawScripts) {
     continue
   }
   $visibleScripts += $s
+}
+if ($MaxVisibleScripts -gt 0 -and $visibleScripts.Count -gt $MaxVisibleScripts) {
+  $visibleScripts = @($visibleScripts | Select-Object -First $MaxVisibleScripts)
 }
 
 $out = [PSCustomObject]@{

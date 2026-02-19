@@ -720,19 +720,17 @@
         const now = Date.now();
         const diffMs = now - d.getTime();
         if (diffMs < 0) {
-          // Handle minor clock/timezone skew gracefully.
-          if (Math.abs(diffMs) <= 12 * 60 * 60 * 1000) return "Just now";
+          // Never show future absolute dates on cards; treat as just-published.
+          return "Just now";
         }
-        if (diffMs >= 0) {
-          const diffMinutes = Math.floor(diffMs / 60000);
-          if (diffMinutes < 60) {
-            const m = Math.max(1, diffMinutes);
-            return m + (m === 1 ? " min ago" : " mins ago");
-          }
-          const diffHours = Math.floor(diffMinutes / 60);
-          if (diffHours < 24) {
-            return diffHours + (diffHours === 1 ? " hour ago" : " hours ago");
-          }
+        const diffMinutes = Math.floor(diffMs / 60000);
+        if (diffMinutes < 60) {
+          const m = Math.max(1, diffMinutes);
+          return m + (m === 1 ? " min ago" : " mins ago");
+        }
+        const diffHours = Math.floor(diffMinutes / 60);
+        if (diffHours < 24) {
+          return diffHours + (diffHours === 1 ? " hour ago" : " hours ago");
         }
         try {
           return new Intl.DateTimeFormat("en-US", {
@@ -1163,7 +1161,6 @@
     </script>
   </body>
 </html>
-
 
 
 

@@ -108,12 +108,42 @@
       .tab-shop {
         background: linear-gradient(135deg, rgba(102,255,156,0.34), rgba(43,220,126,0.34));
       }
+            .tab-shop.shop-highlight {
+        background: linear-gradient(135deg, rgba(124,255,107,0.72), rgba(46,209,107,0.72));
+        border-color: rgba(124,255,107,1);
+        color: #a7ff92;
+        text-shadow: 0 0 12px rgba(124,255,107,0.75);
+        box-shadow: 0 0 0 1px rgba(124,255,107,0.45) inset, 0 0 20px rgba(124,255,107,0.55), 0 0 34px rgba(46,209,107,0.35);
+        animation: shopPulse 1.4s ease-in-out infinite alternate;
+      }
+      @keyframes shopPulse {
+        0% { transform: translateY(0); filter: brightness(1); }
+        100% { transform: translateY(-1px); filter: brightness(1.08); }
+      }
       .btn.ghost {
         background: transparent;
         color: var(--text);
         border: 1px solid rgba(255,255,255,0.2);
       }
-      .container {
+                        .help-store-cta {
+        display: inline-block;
+        margin-top: 8px;
+        background: linear-gradient(135deg, rgba(124,255,107,1), rgba(46,209,107,1));
+        color: #0a2a12;
+        border: 1px solid rgba(124,255,107,1);
+        box-shadow: 0 0 0 1px rgba(124,255,107,0.45) inset, 0 0 24px rgba(124,255,107,0.62), 0 0 38px rgba(46,209,107,0.4);
+        font-weight: 800;
+      }
+            .help-store-hint {
+        margin: 12px 0 8px;
+        color: #8dff7a;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }      .settings-modal.open .help-store-cta {
+        color: #b8ff9f;
+        text-shadow: 0 0 10px rgba(124,255,107,0.85), 0 0 18px rgba(124,255,107,0.55);
+        animation: shopPulse 1.2s ease-in-out infinite alternate;
+      }.container {
         max-width: 1100px;
         margin: 0 auto;
         padding: 40px 20px 80px;
@@ -327,6 +357,16 @@
         width: 100%;
         accent-color: var(--accent-2);
       }
+            /* store-cta-force */
+      .settings-panel .help-store-cta {
+        color: #b8ff9f !important;
+        background: linear-gradient(135deg, #86ff6b, #33d46f) !important;
+        border: 1px solid #a2ff84 !important;
+        box-shadow: 0 0 18px rgba(124,255,107,0.8), 0 0 34px rgba(46,209,107,0.55) !important;
+        text-shadow: 0 0 10px rgba(124,255,107,0.9), 0 0 18px rgba(124,255,107,0.65) !important;
+        font-weight: 900 !important;
+        animation: shopPulse 1.1s ease-in-out infinite alternate !important;
+      }
       @media (max-width: 760px) {
         .nav {
           gap: 6px;
@@ -360,7 +400,7 @@
         <a class="tab-settings settings-trigger" id="open-settings" href="#">⚙ Settings</a>
         <div class="spacer"></div>
         <a class="tab-help" id="open-help" href="#">❓ Help</a>
-        <a class="tab-shop" href="https://shoppy.gg/@jadin77">🛒 Shop</a>
+        <a class="tab-shop" href="https://shoppy.gg/@jadin77">🛒 Store</a>
       </nav>
     </header>
 
@@ -432,6 +472,8 @@
         <p style="margin:0; color:var(--muted); line-height:1.6;">
           If you need support, direct message and add me on Discord: <strong>Jadin7380</strong>
         </p>
+        <p class="help-store-hint">Tap here to open the official store ↓</p>
+        <a class="btn help-store-cta" href="https://shoppy.gg/@jadin77" target="_blank" rel="noopener noreferrer">Check Out Store</a>
       </section>
     </div>
 
@@ -472,15 +514,18 @@
         const helpBtn = document.getElementById("open-help");
         const helpModal = document.getElementById("help-modal");
         const closeHelp = document.getElementById("close-help");
+        const shopTab = document.querySelector(".tab-shop");
         if (!helpBtn) return;
         helpBtn.addEventListener("click", function (e) {
           e.preventDefault();
           helpModal.classList.add("open");
           helpModal.setAttribute("aria-hidden", "false");
+          if (shopTab) shopTab.classList.add("shop-highlight");
         });
         closeHelp.addEventListener("click", function () {
           helpModal.classList.remove("open");
           helpModal.setAttribute("aria-hidden", "true");
+          if (shopTab) shopTab.classList.remove("shop-highlight");
         });
         helpModal.addEventListener("click", function (e) {
           if (e.target === helpModal) closeHelp.click();
@@ -570,6 +615,20 @@
     </script>
   </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

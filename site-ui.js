@@ -43,7 +43,6 @@
       gap: 6px;
       font-size: 14px;
       font-weight: 800;
-      letter-spacing: 0.02em;
     }
     .font-btn {
       border: 1px solid var(--border);
@@ -168,23 +167,29 @@
     .store-nudge {
       position: fixed;
       z-index: 130;
-      padding: 8px 10px;
-      border-radius: 10px;
-      border: 1px solid rgba(180, 245, 255, 0.5);
-      background: rgba(8, 18, 30, 0.92);
-      color: #eaf9ff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(132, 255, 186, 0.62);
+      background:
+        linear-gradient(145deg, rgba(8, 24, 30, 0.95), rgba(9, 20, 36, 0.94));
+      color: #ffffff;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       pointer-events: none;
       opacity: 0;
-      transform: translateY(6px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      transform: translateY(8px) scale(0.98);
+      box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.42),
+        0 0 0 1px rgba(140, 255, 190, 0.16) inset,
+        0 0 26px rgba(72, 255, 168, 0.28);
+      transition: opacity 0.22s ease, transform 0.22s ease;
       white-space: nowrap;
+      backdrop-filter: blur(8px);
     }
     .store-nudge.show {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateY(0) scale(1);
     }
     .store-nudge::after {
       content: "";
@@ -192,7 +197,7 @@
       right: 18px;
       top: 100%;
       border: 7px solid transparent;
-      border-top-color: rgba(8, 18, 30, 0.92);
+      border-top-color: rgba(9, 20, 36, 0.94);
     }
     .settings-modal {
       align-items: flex-start !important;
@@ -268,7 +273,7 @@
       else if (a.id !== "open-settings" && a.id !== "open-help") a.classList.remove("active");
     });
     const storeBtn = document.querySelector(".nav a.tab-shop");
-    if (storeBtn) storeBtn.textContent = "🏬 Store";
+    if (storeBtn) storeBtn.textContent = "🛒 Store";
   }
 
   function splitIconLabel(a) {
@@ -382,13 +387,20 @@
   function enhanceStoreNudge() {
     const storeBtn = document.querySelector(".nav a.tab-shop");
     if (!storeBtn) return;
-    storeBtn.textContent = "🏬 Store";
+    storeBtn.textContent = "🛒 Store";
     if (document.getElementById("store-nudge")) return;
 
     const nudge = document.createElement("div");
     nudge.id = "store-nudge";
     nudge.className = "store-nudge";
-    nudge.textContent = "↗ Check Out The Store";
+    const nudgePhrases = [
+      "↗ Check out the store",
+      "↗ New drops in the store",
+      "↗ Browse the store deals",
+      "↗ Open the store",
+      "↗ See what's new in the store"
+    ];
+    let lastNudgeIndex = -1;
     document.body.appendChild(nudge);
 
     function positionNudge() {
@@ -400,15 +412,46 @@
     }
 
     function showNudge() {
+      if (nudgePhrases.length > 0) {
+        let idx = Math.floor(Math.random() * nudgePhrases.length);
+        if (nudgePhrases.length > 1 && idx === lastNudgeIndex) {
+          idx = (idx + 1) % nudgePhrases.length;
+        }
+        lastNudgeIndex = idx;
+        nudge.textContent = nudgePhrases[idx];
+      }
       positionNudge();
       nudge.classList.add("show");
+      try {
+        localStorage.setItem("webpage_store_nudge_last_ms", String(Date.now()));
+      } catch (_) {}
       setTimeout(function () {
         nudge.classList.remove("show");
       }, 5000);
     }
-
-    showNudge();
-    setInterval(showNudge, 120000);
+    const nudgeIntervalMs = 30000;
+    const firstShowDelayMs = 1800;
+    const maxInitialWaitMs = 5000;
+    let initialDelay = 0;
+    try {
+      const lastMs = parseInt(localStorage.getItem("webpage_store_nudge_last_ms") || "0", 10);
+      if (Number.isFinite(lastMs) && lastMs > 0) {
+        const elapsed = Date.now() - lastMs;
+        if (elapsed < 0) {
+          initialDelay = firstShowDelayMs;
+        } else if (elapsed < nudgeIntervalMs) {
+          // Keep cross-tab cooldown, but never make users wait too long on a fresh load.
+          initialDelay = Math.min(nudgeIntervalMs - elapsed, maxInitialWaitMs);
+        }
+      }
+    } catch (_) {}
+    if (initialDelay <= 0) {
+      initialDelay = firstShowDelayMs;
+    }
+    setTimeout(function () {
+      showNudge();
+      setInterval(showNudge, nudgeIntervalMs);
+    }, initialDelay);
     window.addEventListener("resize", positionNudge, { passive: true });
     window.addEventListener("scroll", positionNudge, { passive: true });
   }
@@ -521,3 +564,4 @@
     run();
   }
 })();
+

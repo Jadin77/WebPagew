@@ -2,7 +2,8 @@ name: Refresh ScriptBlox Feed
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/10 * * * *"
+    - cron: "5-59/10 * * * *"
   workflow_dispatch:
     inputs:
       max_pages:

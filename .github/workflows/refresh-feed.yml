@@ -2,7 +2,8 @@ name: Refresh ScriptBlox Feed
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # Use offset minutes to avoid peak scheduler congestion at :00/:15/:30/:45.
+    - cron: "2,17,32,47 * * * *"
   workflow_dispatch:
     inputs:
       max_pages:

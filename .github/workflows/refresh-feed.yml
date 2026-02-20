@@ -2,8 +2,7 @@ name: Refresh ScriptBlox Feed
 
 on:
   schedule:
-    # Use offset minutes to avoid peak scheduler congestion at :00/:15/:30/:45.
-    - cron: "2,17,32,47 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
     inputs:
       max_pages:
@@ -21,6 +20,10 @@ on:
 
 permissions:
   contents: write
+
+concurrency:
+  group: refresh-scriptblox-feed
+  cancel-in-progress: false
 
 jobs:
   refresh:
@@ -108,7 +111,7 @@ jobs:
             -DelayMs ([int]$delayMs) `
             -MaxDetailLookupsPerRun 6 `
             -DetailDelayMs 1500 `
-            -MinIntervalMinutes 0 `
+            -MinIntervalMinutes 10 `
             -BlacklistOwnerPages 2 `
             -BlacklistOwnerDelayMs 900 `
             -MinimumKeepRatio 35 `

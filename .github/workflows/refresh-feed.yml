@@ -9,7 +9,7 @@ on:
       max_pages:
         description: "Max pages for this run"
         required: false
-        default: "60"
+        default: "120"
       delay_ms:
         description: "Delay between page pulls (ms)"
         required: false
@@ -17,7 +17,7 @@ on:
       target_pages:
         description: "Target visible pages to maintain"
         required: false
-        default: "240"
+        default: "400"
 
 permissions:
   contents: write
@@ -59,14 +59,16 @@ jobs:
           }
           if (-not $settings) {
             $settings = [pscustomobject]@{
-              max_posts_per_window = 3
-              max_user_posts_per_window = 3
+              max_posts_per_window = 2
+              max_user_posts_per_window = 2
               max_new_posts_per_author_per_run = 2
               max_stale_validations_per_run = 120
               unresolved_new_post_quarantine_minutes = 60
               window_minutes = 10
             }
           }
+          $settings.max_posts_per_window = 2
+          $settings.max_user_posts_per_window = 2
           $settings.max_new_posts_per_author_per_run = 2
           $settings.max_stale_validations_per_run = 120
           $settings.unresolved_new_post_quarantine_minutes = 60
@@ -76,13 +78,13 @@ jobs:
         shell: pwsh
         run: |
           $maxPages = "${{ github.event.inputs.max_pages }}"
-          if (-not $maxPages) { $maxPages = "60" }
+          if (-not $maxPages) { $maxPages = "120" }
           if ([int]$maxPages -lt 40) { $maxPages = "40" }
           $delayMs = "${{ github.event.inputs.delay_ms }}"
           if (-not $delayMs) { $delayMs = "1400" }
           $targetPages = "${{ github.event.inputs.target_pages }}"
-          if (-not $targetPages) { $targetPages = "240" }
-          if ([int]$targetPages -lt 1) { $targetPages = "240" }
+          if (-not $targetPages) { $targetPages = "400" }
+          if ([int]$targetPages -lt 1) { $targetPages = "400" }
           $targetScripts = [int]$targetPages * 24
 
           $rollingCount = 0

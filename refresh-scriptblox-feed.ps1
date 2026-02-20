@@ -231,7 +231,7 @@ Ensure-File -Path $settingsPath -DefaultContent @"
 {
   "max_posts_per_window": 3,
   "max_user_posts_per_window": 3,
-  "max_new_posts_per_author_per_run": 5,
+  "max_new_posts_per_author_per_run": 2,
   "max_stale_validations_per_run": 120,
   "unresolved_new_post_quarantine_minutes": 60,
   "window_minutes": 10
@@ -265,7 +265,7 @@ IHeartCoding
 Ensure-File -Path $autoBlacklistTitlesPath -DefaultContent "# Auto-generated normalized titles`r`n"
 Ensure-File -Path $autoLogPath
 
-$settingsDefault = @{ max_posts_per_window = 3; max_user_posts_per_window = 3; max_new_posts_per_author_per_run = 5; max_stale_validations_per_run = 120; unresolved_new_post_quarantine_minutes = 60; window_minutes = 10 }
+$settingsDefault = @{ max_posts_per_window = 3; max_user_posts_per_window = 3; max_new_posts_per_author_per_run = 2; max_stale_validations_per_run = 120; unresolved_new_post_quarantine_minutes = 60; window_minutes = 10 }
 $settings = $settingsDefault
 try {
   $parsed = Get-Content $settingsPath -Raw | ConvertFrom-Json

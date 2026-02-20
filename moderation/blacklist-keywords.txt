@@ -1,5 +1,7 @@
 # One keyword phrase per line.
 # Any variation containing all words in the phrase is blocked.
 mm2 dupe
+dupe
+dupes
 autodrive
 auto drive
